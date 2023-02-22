@@ -24,8 +24,19 @@ In an imperative language like Python, you specify the action steps needed to re
 NoSQL models are generally non-relational, although some NoSQL data systems are Not Only SQL and support both relational and relational models. Two common non-relational data models are document models and graph models.
 
 **Document Model**
-In this model the data is in the form of self-contained documents and the relationship between documents is rare.
+In this model the data is in the form of self-contained documents and the relationship between documents is rare. A document is usually a continuous string in JSON, XML or BSON (Binary JSON) format. A document is equivalent to a row in a relational table. This modal is referred as schemaless because each document can have a different set of schema. However, this is not accurate as there is no predetermined set of schema enforced on each document during writing the data, but some assumptions about schema needs to be made when reading the data.
+
+What are the advantages of the document model?   
+1. Better locality: All the information about an entity can be found in its document, as opposed to be scattered across tables that need joins to retrieve.
+1. Less restriction about schema during data writes
+
+What are the disadvantages of the document model?   
+    It's less efficient to execute joins across documents compared to tables
 
 **Graph Model**
-In this model, data is also in the form of documents but the emphasis is on the relationship between them.
+In this model, data is also in the form of documents but the emphasis is on the relationship between them. Given this, it is faster to retrieve data based on relationships.
 
+Unstructured data is stored in data lakes and after being processed the storage repository is called data warehouse.
+
+## Data Storage Engines and Processing
+It's important to know about different types of databases and the workloads they are optimised for in order to choose the one that best fits your needs. There are generally two types of workloads databases are optimised forl transactional processing and analytical processing.
