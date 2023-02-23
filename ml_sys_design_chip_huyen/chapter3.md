@@ -40,3 +40,34 @@ Unstructured data is stored in data lakes and after being processed the storage 
 
 ## Data Storage Engines and Processing
 It's important to know about different types of databases and the workloads they are optimised for in order to choose the one that best fits your needs. There are generally two types of workloads databases are optimised forl transactional processing and analytical processing.
+### Transactional Processing
+Any action such as watching a video, ordering an item, tweeting is considered a transaction. Transactions are inserted as they are generated, modified when something changes and deleted when no longer needed. This processing is called online transaction processing (OLTP). 
+Transactional databases need to have low latency and high availabilty given that they are user facing. In this regard they can be ACID:   
+1. Atomicity: guarantees that all steps in a transaction are completed successfully. If one step fails all other steps must also fail. For instance, in a ride sharing app, if the rider's payment fails, a driver should not be assigned to them.
+1. Consistency: guarantees that all the inserted transactions follow predefined rules and errors in the incoming data does not create unintented consequences. For example, a user has to be validated before the transaction is accepted.
+1. Isolation: guarantees that two concurrent transactions happen as if they were isolated and occuring one by one. This ensures that concurrent data read/writes do not interfer with one another. For example, two users should not be allowed to book the same driver at the same time.
+1. Durability: guarantees that once a committed transaction will remain committed, even if the system fails. For instance, if a user has ordered a ride, they should still get the ride even though their phone dies.   
+Transactions are processed separately; therefore, transactional databases are usually row-major.
+### Analytical Processing
+On the other hand, analytical databases support aggregation of values in a column across multiple rows to answer questions such as the average ride price between 5 and 6 pm last week. Analytical processing is referred to as online analytical processing (OLAP).
+
+Optimising databases for one process or the other, was a technological limitation of the past and today with decoupling storage and compute, many databases support both.
+### ETL: Extract, Transform, and Load
+ETL is the process of extracting the raw data from all the data sources, validating and rejecting the malformatted data. After extracting, the data is processed and transformed to the desired structure. An example of data transformation could be standardising the range of variables across different sources, e.g. the gender column can be strings from one source and numbers in another. After transformation, based on our decision about how and the frequency, the transformed data is loaded into the target destination, e.g. database, file, data warehouse.
+  <!-- <center>
+    <img src="images/.jpg" width="60%" alt="etl" title="etl">
+  </center> -->
+
+### ELT: Extract, Load, and Transform
+If we are not sure of the transformed data schema, we can store all the data in a data lake and leave the transformation to the application after loading the data into it. If the size of the data stored is very large, this process can become inefficient. 
+## Modes of Dataflow
+Usually in a real-world setting data flows from one process to another. There are three main modes of dataflow:
+1. Data passing through databases
+1. Data passing through services using requests, e.g. requests provided by REST and RPC APIs
+1. Data passing through a real-time transport such as Apache Kafka and Amazon Kinesis
+
+### Data Passing Through Databases
+This is the easiest yet least practical mode of dataflow. In this setting, two processes will need access to the same database, e.g. process A writes to the database and process B reads that data from the database. Access to the same database may not be feasible if the two processes belong to different companies. Also, database read and writes increases latency and is not suitable for consumer-facing applications with low-latency requirements.
+
+### Data Passing Through Services
+ 
