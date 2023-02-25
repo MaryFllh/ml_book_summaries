@@ -54,9 +54,9 @@ On the other hand, analytical databases support aggregation of values in a colum
 Optimising databases for one process or the other, was a technological limitation of the past and today with decoupling storage and compute, many databases support both.
 ### ETL: Extract, Transform, and Load
 ETL is the process of extracting the raw data from all the data sources, validating and rejecting the malformatted data. After extracting, the data is processed and transformed to the desired structure. An example of data transformation could be standardising the range of variables across different sources, e.g. the gender column can be strings from one source and numbers in another. After transformation, based on our decision about how and the frequency, the transformed data is loaded into the target destination, e.g. database, file, data warehouse.
-  <center>
-    <img src="images/ETL.jpg" width="60%" alt="etl" title="etl">
-  </center>
+<center>
+<img src="images/ETL.jpg" width="60%" alt="etl" title="etl">
+</center>
 
 ### ELT: Extract, Load, and Transform
 If we are not sure of the transformed data schema, we can store all the data in a data lake and leave the transformation to the application after loading the data into it. If the size of the data stored is very large, this process can become inefficient. 
@@ -84,23 +84,23 @@ The most common styles of requests for dataflow through networks are REST (repre
 
 ### Data Passing Through Real-Time Transport
 Imagine in the example above that instead of the price optimisation service only requesting data from the other two services, each service needing data from the other two in order to make its prediction, e.g. the driver management service requesting the predicted prices from the price optimisation service to incentivise the drivers. The figure below shows the architecture. 
-  <center>
-    <img src="images/request_driven.jpg" width="60%" alt="etl" title="request_driven">
-  </center>
+<center>
+<img src="images/request_driven.jpg" width="60%" alt="etl" title="request_driven">
+</center>
 As can be seen, this interservice data passing can become very complicated as number of services grows. In addition, request-driven dataflows are synchronous: the target has to listen to the request for it to go through. If the target is down, the requester will keep sending the request until it times out. Also, if the sender service goes down before it receives a response, the response will be lost. Request-driven architecture works best for systems that rely on logic rather than data.   
 A solution to this inefficient architecture can be using a broker. All services broadcast their updated predictions to this broker and any service that needs others' predictions can request the most recent updates from the broker rather than directly from each service.    
 Databases can be used as a broker; each service writes data to it and other services read it, but this is slow. A better way is to use in-memory storage such as real-time transports. Data broadcast to a real-time transport is called an event. For this reason, a real-time transport architecture is called event-driven and a real-time transport is called an event bus.    
 The two most common types of real-time transports are pub-sub (publish-subscribe) and message queue.    
-  <center>
-    <img src="images/broker.jpg" width="60%" alt="etl" title="etl">
-  </center>
+<center>
+<img src="images/broker.jpg" width="60%" alt="etl" title="etl">
+</center>
 
 **Pubsub**   
 In this model, any service can publish to different topics and any service subscribed to those topics can read all the events published to it. The services that produce data don't care about what services consume their data. Pubsub solutions usually have a retention policy where they keep the data in the real-time transport for a period of time, e.g. a week and delete them or move them to a permanent storage such as Amazon S3.   
 Examples of pubsub solutions are Apache Kafka and Amazon Kinesis. 
-  <center>
-    <img src="images/retention.jpg" width="60%" alt="etl" title="retention">
-  </center>
+<center>
+<img src="images/retention.jpg" width="60%" alt="etl" title="retention">
+</center>
 
 **Message Queue**
 In this modal an event known as a message usually has intended consumers. The message queue is responsible for getting the message to the right consumers. Examples of message queues are Apache RockerMQ and RabbitMQ.
