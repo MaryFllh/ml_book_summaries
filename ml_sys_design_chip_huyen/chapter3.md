@@ -54,9 +54,9 @@ On the other hand, analytical databases support aggregation of values in a colum
 Optimising databases for one process or the other, was a technological limitation of the past and today with decoupling storage and compute, many databases support both.
 ### ETL: Extract, Transform, and Load
 ETL is the process of extracting the raw data from all the data sources, validating and rejecting the malformatted data. After extracting, the data is processed and transformed to the desired structure. An example of data transformation could be standardising the range of variables across different sources, e.g. the gender column can be strings from one source and numbers in another. After transformation, based on our decision about how and the frequency, the transformed data is loaded into the target destination, e.g. database, file, data warehouse.
-  <!-- <center>
-    <img src="images/.jpg" width="60%" alt="etl" title="etl">
-  </center> -->
+  <center>
+    <img src="images/ETL.jpg" width="40%" alt="etl" title="etl">
+  </center>
 
 ### ELT: Extract, Load, and Transform
 If we are not sure of the transformed data schema, we can store all the data in a data lake and leave the transformation to the application after loading the data into it. If the size of the data stored is very large, this process can become inefficient. 
@@ -70,4 +70,50 @@ Usually in a real-world setting data flows from one process to another. There ar
 This is the easiest yet least practical mode of dataflow. In this setting, two processes will need access to the same database, e.g. process A writes to the database and process B reads that data from the database. Access to the same database may not be feasible if the two processes belong to different companies. Also, database read and writes increases latency and is not suitable for consumer-facing applications with low-latency requirements.
 
 ### Data Passing Through Services
- 
+A service is a process that can be accessed remotely, e.g. through a network. To pass data between processes through a network, the process that needs data, let's call it process A, needs to send the process with data, let's call it process B, a request with what it needs. For this request-driven communication to happen, B needs to be exposed to A as a service. If B needs any data from A, process A also needs to be exposed to B as a service. These services can be run by different companies. For example, a service can be from a stock exchange company that keeps track of current market prices. Another service can be an investment firm that requests the current stock prices to predict the future prices.
+Services can also be part of the same application. Separating different processes into their own services allows each componenet to be developed, tested, and maintained independently of one another. This structure is known as the microservice architecture.   
+
+**Microservices in an ML application**
+Consider that a ride-sharing app has three services:
+1. Driver Management Service: Predicts the number of available drivers in the next minute in any given area.
+1. Ride Management Service: Predicts how many rides will be requested in the next minute in any given area.
+1. Price Optimisation Service: Predicts the optimal price for each ride. The price has to be high enough for the drivers to accept but low enough for riders to be willing to accept the ride.   
+
+Since the ride prices are affected by supply and demand, the price optimisation service needs data from both other services. Each time a user requests a ride, the price optimisation service requests the predicted number of drivers and riders from the ride management service and ride management services respectively.  
+The most common styles of requests for dataflow through networks are REST (representational state transfer) and RPC (remote procedure call).
+
+### Data Passing Through Real-Time Transport
+Imagine in the example above that instead of the price optimisation service only requesting data from the other two services, each service needing data from the other two in order to make its prediction, e.g. the driver management service requesting the predicted prices from the price optimisation service to incentivise the drivers. The figure below shows the architecture. 
+  <center>
+    <img src="images/request_driven.jpg" width="40%" alt="etl" title="etl">
+  </center>
+As can be seen, this interservice data passing can become very complicated as number of services grows. In addition, request-driven dataflows are synchronous: the target has to listen to the request for it to go through. If the target is down, the requester will keep sending the request until it times out. Also, if the sender service goes down before it receives a response, the response will be lost. Request-driven architecture works best for systems that rely on logic rather than data.   
+A solution to this inefficient architecture can be using a broker. All services broadcast their updated predictions to this broker and any service that needs others' predictions can request the most recent updates from the broker rather than directly from each service.    
+Databases can be used as a broker; each service writes data to it and other services read it, but this is slow. A better way is to use in-memory storage such as real-time transports. Data broadcast to a real-time transport is called an event. For this reason, a real-time transport architecture is called event-driven and a real-time transport is called an event bus.    
+The two most common types of real-time transports are pub-sub (publish-subscribe) and message queue.    
+  <center>
+    <img src="images/broker.jpg" width="40%" alt="etl" title="etl">
+  </center>
+
+**Pubsub**   
+In this model, any service can publish to different topics and any service subscribed to those topics can read all the events published to it. The services that produce data don't care about what services consume their data. Pubsub solutions usually have a retention policy where they keep the data in the real-time transport for a period of time, e.g. a week and delete them or move them to a permanent storage such as Amazon S3.   
+Examples of pubsub solutions are Apache Kafka and Amazon Kinesis. 
+  <center>
+    <img src="images/retention.jpg" width="40%" alt="etl" title="etl">
+  </center>
+
+**Message Queue**
+In this modal an event known as a message usually has intended consumers. The message queue is responsible for getting the message to the right consumers. Examples of message queues are Apache RockerMQ and RabbitMQ.
+
+## Batch Processing Versus Stream Processing
+When data processing is done on historical data, i.e. data in data storage engines such as, warehouses, it is considered batch processing. Batch processes happen periodically, for example once a day and is usually perfomed to compute features that change less frequently such as a driver's ratings. MapReduce and Spark are some examples of distributed systems that process batch data efficiently. Features extracted from batch processing are called static features.   
+Stream processing on the other hand, is perfomed more frequently, e.g. once every 5 minutes or whenever a request comes in from the user.    
+The strength of stream processing is in its statefulness. This reduces the redundacies in computations. For example, consider a batch process that processes the user engagement in the last 30 days every day. Everyday the process recomputes information of the first 29 days. However, a stream process will join today's information with the old information. Features computed through stream processig are called dynamic features.    
+You usually need both static and dynamic features in you machine learning system, so you need and infrastructure that allows you to do both.   
+To do computation on stream data, you need a stream computation engine (the way MapReduce and Spark are batch computation engines). For simple stream computations, built-in stream computation capacity of real-time transports like Apache Kafka are sufficient, but ML systems that leverage streaming computation are rarely simple. The number of stream features in applications like fraud detections are easily in the order of hundreds if not thousands. The feature extraction logic can require joins and aggregations along different dimensions. For these cases, tools like Apache Flink, KSQL and Spark Streaming are good options. The first two are more well-known and provide a nice SQL abstraction.    
+
+**Why is stream processing more difficult?**
+1. The data amount is unbounded
+1. Data comes in at variable rates and speeds
+
+For these reasons it's easier to make a stream processor do batch processing than the other way around.
