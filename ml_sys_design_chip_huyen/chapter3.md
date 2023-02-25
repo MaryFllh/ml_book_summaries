@@ -102,7 +102,7 @@ Examples of pubsub solutions are Apache Kafka and Amazon Kinesis.
 <img src="images/retention.jpg" width="60%" alt="etl" title="retention">
 </center>
 
-**Message Queue**
+**Message Queue**   
 In this modal an event known as a message usually has intended consumers. The message queue is responsible for getting the message to the right consumers. Examples of message queues are Apache RockerMQ and RabbitMQ.
 
 ## Batch Processing Versus Stream Processing
