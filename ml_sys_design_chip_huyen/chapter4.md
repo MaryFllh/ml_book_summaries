@@ -29,8 +29,21 @@ An issue of this method is that it is not always possible split samples into gro
 In this method, each sample is given a weight which determines the probability of it being selected. This is useful as it allows you to use your domain knowledge about the real world data. For example, if you know that more recent data is more important you can give it a higher weight and therefore a higher chance of getting sampled relative to older data.   
 Weighted sampling is closely related to sample weights. In weighted sampling samples are weighted to be selected for creating training data, whereas in sample weights, samples in the training data are weighted to signify their importance. For example, you may weight the samples from a rare class higher to affect the loss function more and therefore change the decision boundry in such a way that the rare class is classified more accurately.
 ### Reservoir Sampling
+This method is useful for sampling from streaming data. Assume that you have an incoming stream of tweets and you want to sample k tweets from it. You want each tweet to have equal probability of being selected but you don't know in advance how many tweets there will be in total to know the probability of each selection. Also, if you stop the sampling at any time you want all the tweets to have been selected with the correct probability. Reservoir sampling is the method that satisfies these criteria. It involves a reservoir which can be an array and consists of three steps:   
+1. Put the first k elements into the reservoir.
+1. For each incoming nth element, generate a random number i such that 1 $\leq$ i $\leq$ n.
+1. If 1 $\leq$ i $\leq$ k: replace the ith element in the reservoir with the nth element. Else, do nothing.
+
+This means that each incoming nth element has $k/n$ probability of being selected to be in the reservoir. You can also prove that each element in the reservoir has $k/n$ probability of being there. This means that all samples have equal probability of being selected and if we stop the selection at any time, all samples in the reservoir have been selected with the correct probabiltiy. The figure below illustrates how this sampling method works.
+<center>
+<img src="images/reservoir.jpg" width="60%" alt="reservoir" title="reservoir">
+</center>
 
 ### Importance Sampling
+This method is very useful as it allows us to sample from a distribution when we don't have access to it but only have access to another distribution. Suppose you want to sample $x$ from a distibution $P(x)$ which is infeasible to sample from. There is another distribution $Q(x)$ which is much easier to sample from. You can sample $x$ from $Q(x)$ and weigh it by $P(x)/Q(x)$. $Q(x)$ is called the *proposal distribution* or the *importance distribution* and can be any distribution as long as it is postive wherever $P(x)$ is non-zero. The following equation shows that in expectation, $x$ sampled from $P(x)$ is equal to $x$ sampled from $Q(x)$ weighted by $P(x)/Q(x)$:   
+$E_P[x]=\sum_{x}P(x)x = \sum_{x} Q(x)x\frac{P(x)}{Q(x)} = E_Q[x\frac{P(x)}{Q(x)}]$
+
+One usecase of importance sampling is policy-based reinforcement learning. When updating the policy, the value functions of the new policy have to be estimated, but calculating the total rewards of taking an action can be costly because it requires considering all possible outcomes until the end of the time horizon after that action. However, if the new policy is relatively close to the old policy, you can calculate the total rewards based on the old policy and weight them according to the new policy. The rewards from the old policy make up the proposal distribution.
 ## Labeling
 ### Hand Labels
 **Label multiplicity**   
