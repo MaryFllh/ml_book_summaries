@@ -39,13 +39,13 @@ In this model, data is also in the form of documents but the emphasis is on the 
 Unstructured data is stored in data lakes and after being processed the storage repository is called data warehouse.
 
 ## Data Storage Engines and Processing
-It's important to know about different types of databases and the workloads they are optimised for in order to choose the one that best fits your needs. There are generally two types of workloads databases are optimised forl transactional processing and analytical processing.
+It's important to know about different types of databases and the workloads they are optimised for in order to choose the one that best fits your needs. There are generally two types of workloads databases are optimised for transactional processing and analytical processing.
 ### Transactional Processing
 Any action such as watching a video, ordering an item, tweeting is considered a transaction. Transactions are inserted as they are generated, modified when something changes and deleted when no longer needed. This processing is called online transaction processing (OLTP). 
-Transactional databases need to have low latency and high availabilty given that they are user facing. In this regard they can be ACID:   
+Transactional databases need to have low latency and high availability given that they are user facing. In this regard they can be ACID:   
 1. Atomicity: guarantees that all steps in a transaction are completed successfully. If one step fails all other steps must also fail. For instance, in a ride sharing app, if the rider's payment fails, a driver should not be assigned to them.
-1. Consistency: guarantees that all the inserted transactions follow predefined rules and errors in the incoming data does not create unintented consequences. For example, a user has to be validated before the transaction is accepted.
-1. Isolation: guarantees that two concurrent transactions happen as if they were isolated and occuring one by one. This ensures that concurrent data read/writes do not interfer with one another. For example, two users should not be allowed to book the same driver at the same time.
+1. Consistency: guarantees that all the inserted transactions follow predefined rules and errors in the incoming data does not create unintended consequences. For example, a user has to be validated before the transaction is accepted.
+1. Isolation: guarantees that two concurrent transactions happen as if they were isolated and occurring one by one. This ensures that concurrent data read/writes do not interfere with one another. For example, two users should not be allowed to book the same driver at the same time.
 1. Durability: guarantees that once a committed transaction will remain committed, even if the system fails. For instance, if a user has ordered a ride, they should still get the ride even though their phone dies.   
 Transactions are processed separately; therefore, transactional databases are usually row-major.
 ### Analytical Processing
@@ -71,7 +71,7 @@ This is the easiest yet least practical mode of dataflow. In this setting, two p
 
 ### Data Passing Through Services
 A service is a process that can be accessed remotely, e.g. through a network. To pass data between processes through a network, the process that needs data, let's call it process A, needs to send the process with data, let's call it process B, a request with what it needs. For this request-driven communication to happen, B needs to be exposed to A as a service. If B needs any data from A, process A also needs to be exposed to B as a service. These services can be run by different companies. For example, a service can be from a stock exchange company that keeps track of current market prices. Another service can be an investment firm that requests the current stock prices to predict the future prices.
-Services can also be part of the same application. Separating different processes into their own services allows each componenet to be developed, tested, and maintained independently of one another. This structure is known as the microservice architecture.   
+Services can also be part of the same application. Separating different processes into their own services allows each component to be developed, tested, and maintained independently of one another. This structure is known as the microservice architecture.   
 
 **Microservices in an ML application**
 Consider that a ride-sharing app has three services:
@@ -106,9 +106,9 @@ Examples of pubsub solutions are Apache Kafka and Amazon Kinesis.
 In this modal an event known as a message usually has intended consumers. The message queue is responsible for getting the message to the right consumers. Examples of message queues are Apache RockerMQ and RabbitMQ.
 
 ## Batch Processing Versus Stream Processing
-When data processing is done on historical data, i.e. data in data storage engines such as, warehouses, it is considered batch processing. Batch processes happen periodically, for example once a day and is usually perfomed to compute features that change less frequently such as a driver's ratings. MapReduce and Spark are some examples of distributed systems that process batch data efficiently. Features extracted from batch processing are called static features.   
-Stream processing on the other hand, is perfomed more frequently, e.g. once every 5 minutes or whenever a request comes in from the user.    
-The strength of stream processing is in its statefulness. This reduces the redundacies in computations. For example, consider a batch process that processes the user engagement in the last 30 days every day. Everyday the process recomputes information of the first 29 days. However, a stream process will join today's information with the old information. Features computed through stream processig are called dynamic features.    
+When data processing is done on historical data, i.e. data in data storage engines such as, warehouses, it is considered batch processing. Batch processes happen periodically, for example once a day and is usually performed to compute features that change less frequently such as a driver's ratings. MapReduce and Spark are some examples of distributed systems that process batch data efficiently. Features extracted from batch processing are called static features.   
+Stream processing on the other hand, is performed more frequently, e.g. once every 5 minutes or whenever a request comes in from the user.    
+The strength of stream processing is in its statefulness. This reduces the redundancies in computations. For example, consider a batch process that processes the user engagement in the last 30 days every day. Everyday the process recomputes information of the first 29 days. However, a stream process will join today's information with the old information. Features computed through stream processing are called dynamic features.    
 You usually need both static and dynamic features in you machine learning system, so you need and infrastructure that allows you to do both.   
 To do computation on stream data, you need a stream computation engine (the way MapReduce and Spark are batch computation engines). For simple stream computations, built-in stream computation capacity of real-time transports like Apache Kafka are sufficient, but ML systems that leverage streaming computation are rarely simple. The number of stream features in applications like fraud detections are easily in the order of hundreds if not thousands. The feature extraction logic can require joins and aggregations along different dimensions. For these cases, tools like Apache Flink, KSQL and Spark Streaming are good options. The first two are more well-known and provide a nice SQL abstraction.    
 
