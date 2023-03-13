@@ -62,14 +62,60 @@ There are also different types of user feedback that can be collected depending 
 Another aspect of the feedback loop is its length. How long should we wait to see if the recommendations were clicked on? If it's too short we might miss the clicks that happened after the feedback loop window ended and get false negative labels. But it allows you to capture labels faster and address issues with your model quicker. No matter how long your window length, there might be some premature negative labels.
 ### Handling Lack of Labels
 **Weak Supervision**   
-**Semi-supervision**   
-**Transfer learning**   
-**Active learning**
-## Class Imbalance
+This is a programmatic way to label data based on different criteria, e.g. keyword heuristic, regular expressions, database lookups. Libraries like Snorkel are build around the concept of *labeling function (LF)*, a function that encodes heuristics. Different LFs may label the same samples differently. It's important to combine, denoise and reweight all LFs to get a set of labels that are most likely correct. Weak supervision has a number of advantages:
+1. It is useful when data has strict privacy requirements, as not all the data needs to be looked at (only a subset that is cleared for writing LFs). 
+1. You do not need any hand labels for weak supervision; however, it is useful to have a subset to get a better insight into how to write LFs and validate the correctness of them. 
+1. It is much more cost efficient than hand labeling
+1. It is highly adaptive. The LFs can be modified and used for relabeling data as the need arises
+1. It is very fast and you don't need to wait weeks or months for the data to get labels by subject matter experts. 
 
+You might think, if heuristics work, why do we need ML? LFs don't cover all the data samples, so models can be trained on the data labeled with LFs to generate predictions on samples that aren't covered by any LF.       
+**Semi-supervision**   
+Unlike weak supervision that relies on heuristics, semi-supervision makes structural assumptions about the data to generate labels based on an initial set of labels. There are two common semi-supervised methods:
+1. Self-training: You train a model using the labeled data and use that to predict labels of the unlabeled samples. You then add the predictions with high raw probability to your labeled data and repeat the process until you have a model with satisfying performance.
+1. Data points that share similar characteristics, have the same label. You can use clustering methods to find the similar points and then assign the same label to points in the same cluster.
+1. Perturbation: This method assumes that small changes to the data points should not change its label. You can therefore increase the labeled data by perturbing the existing labeled ones, either directly, e.g. adding white noise to the images or indirectly, e.g. adding small numbers to their embeddings.   
+
+One challenge in semi-supervision deciding on how much data to set aside for evaluation, if it's too small the best performing model can be overfitting, if it's too large, you have less data to train on. One solution to this is to use a reasonably large evaluation set to select the best performing model and then using the evaluation data to continue training that model.   
+**Transfer learning**   
+Transfer learning refers to the process of using a pretrained model as the starting point for your model on your task. Depending on the task the pretrained model was trained on, its data and the task you want to use it for, you can use it directly. This is called zero-shot learning, or you might need to fine-tune it by modifying some of it or all of it by continuing to train it on your data.    
+Transfer learning is a great way to get started with a model that needs a lot of data without having a lot of data.   
+**Active learning**   
+Active learning is based on the idea that you can get a better performing model trained on fewer data points if those data points are more helpful in determining the underlying structure. In other words, instead of labeling the data randomly, label those that the model most struggles with and is most uncertain about. These hard data points can be found using different metrics or heuristics. Here some examples of metrics/heuristics:   
+1. Prediction probabilities: Low raw probabilities can be used as a signal of uncertainty. You can select the data points with the lowest raw probabilities and label them. The figure below shows the performance gained by hand labeling 30 data points selected by active learning as opposed to labeling 30 random points.
+<center>
+<img src="images/active_learning.jpg" width="50%" alt="active_learning" title="active_learning">
+</center>
+
+1. Query-by-committee: Multiple models, usually the same models with different hyperparameters or same models trained on different slices of data vote on the predicted label of data points. The samples with the most disagreement is used for hand labeling.
+1. Choose the samples that if used for training will give the highest gradient updates or will reduce the lost the most. 
+
+## Class Imbalance
+Class imbalance can happen in both classification and regression tasks. An example of imbalanced data in regression is estimating health-care bills which are generally highly skewed. The median bill is low but the 95th percentile is huge. It is much more costly to have errors for the larger numbers, a 100% difference for a median rate of $250 is acceptable but it is detrimental for $10K bill. Therefore, it is a good idea to train the model to be more accurate at predicting the 95th percentile at the cost of overall performance.  
 **Challenges**   
+ML, especially deep learning, performs well when the data is evenly distributed. Learning is difficult with imbalanced data for the following reasons:   
+1. Having a few examples or no examples of a rare class doesn't give enough examples for the model to learn from and in the case of no examples at all, the model might assume that the rare class does not exist.
+1. Class imbalance makes it easier for the model to get learn unuseful heuristics instead of anything meaningful about the underlying pattern of the data. 
+1. Class imbalance leads to asymmetric costs of error as stated in the example earlier with predicting healthcare bills.
+
 **How to handle it?**
+1. Resampling: This is a data-level method as it aims at changing the underlying distribution of the training data. One way is *oversampling* which refers to the process of adding more instances of the minority class. The simplest way to add new samples is randomly make copies of the rare samples, this has the risk of overfitting though. There are more sophisticated methods such as SMOTE (synthetic minority oversampling technique) popular for oversampling low-dimensional data. Another resampling method is *undersampling* which is the opposite of oversampling where you remove samples from the majority classes. One way to do this is pick two samples that are from different classes but in proximity and remove the one from the majority class. This technique is called Tomek links. Undersampling however, has the risk of removing valuable information and although in the case of Tomek links will make the decision boundries clearer, it does not represent the real-world data you will be using your model for.   
+There are some ways to mitigate the risks of resampling:   
+    1. Two-phase learning: Train the model on the resampled data then fine-tune on the original data.
+    1. Dynamic sampling: This method aims at showing the model less of what it has already learned and more of what it hasn't. It works by oversampling the low-performing classes and undersampling the high-performing ones during training.
+1. Cost-sensitive learning: If making incorrect predictions for one class should be costlier than another class, you can enforce different costs for different classes. The loss caused by instance $x$ of class $i$ will be calculated as the weighted average of all possible classifications of instance $x$:   
+$L(x; \theta) = \sum_{j}C_{ij}P(j|x; \theta)$
+
+    The downside of this approach is that you need to manually set the cost matrix which varies for different tasks and scales.
+1. Class-balanced loss: Is a way to mitigate the effects of data imbalance by having rarer classes have a higher weight in the loss function. A very basic way to do this is have the classes inversely weighted by the proportion of samples in that class.
+1. Focal Loss: This is a specific loss function that aims at emphasising on the data points that are harder to learn by giving them a higher weight in the loss function.    
+$FL(\rho_t) = -(1 - \rho_t)^{\gamma}log(\rho_t)$
 ## Data Augmentation
+Data augmentation is the process of adding more data and is useful for cases where there is little training data but also in general to make the models more robust to noise and adversarial attacks.
 ### Simple Label-Preserving Transforms
+This is an easy way to quickly double or triple your training data. For image data, you can rotate, flip, crop, invert, erase parts of the data, etc. without changing the label. For NLP tasks you can replace some of the words with synonyms by looking up a dictionary or finding words with close embeddings.
 ### Perturbation
+Perturbation is another label-preserving transformation where noise is added to the data points to improve the learning process. Noise can be added either by adding random noise or by using a search strategy. *DeepFool* is an algorithm that finds the minimum possible noise injection needed to cause a misclassification with high confidence. This type of augmentation is called adversarial augmentation. 
 ### Data Synthesis
+In NLP, templates is an easy way to bootstrap your model. For example, in a chatbot setting a template can look like: "Find me a [CUISINE] restaurant within [NUMBER] miles of [LOCATION]". You can replace [CUISINES] with all possible cuisines and so on.   
+In computer vision, one way to synthesise new data is to combine existing examples with discrete labels to generate continuous labels. For example, if image $x_1$ is an image of a dog and image $x_2$ is an image of a cat, you can create a mixture of the two and generate a new sample $x'$. This is called mixup. It has shown to improve model's generalisation, reduces the model's memorisation of corrupt labels, increases the robustness to adversarial examples, and stabalises the training of generative adversarial networks.  
