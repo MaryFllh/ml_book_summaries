@@ -31,13 +31,12 @@ Scaling is one of the easiest ways to give your model a performance boost. To th
 
     $x' = a + \frac{(x - min(x))(b - a)}{max(x) - min(x)}$
 
-    Scaling to an arbitrary range works well when you don't want to make any assumptions about your variables
+    Scaling to an arbitrary range works well when you don't want to make any assumptions about your variables5
 1. Standardisation: If you think that your features might follow a normal distribution, it might be useful to scale them to have zero mean and unit variance:
 
-    $x' = \frac{x - \bar{x}}{\sigma}$
-1. Log transformation: In practice ML models struggle with skewed distribution of features. This method doesn't work in all cases and you should be cautious of analysis performed on log-transformed data instead of original data:
+    $x' = \frac{x - \bar{x}}{\sigma}$ 
 
-    $x' = log(x)$
+1. Log transformation: In practice ML models struggle with skewed distribution of features. This method doesn't work in all cases and you should be cautious of analysis performed on log-transformed data instead of original data: $x' = log(x)$
 ### **Discretisation**
 Based on the author's experience discretisation rarely helps. It is the process of converting continuous features into discrete features. It is also known as quantisation and binning. It is done by creating buckets of given values and grouping all features with values within a certain range to that bucket. Theoretically, the point is that for a feature annual income, we want the model to treat $5900.5 the same as $60000. But the model sees them as different numbers and treats them differently. Assume we make three buckets for this feature:   
 * Lower income: less than $35,000/year
@@ -59,14 +58,57 @@ Feature crossing has some downsides:
 ### **Discrete and Continuous Positional Embeddings**
 Embedding the positions is needed for when you want to process the inputs in parallel for the model to have a sense of the order of inputs. They can be learned or fixed using a predefined function usually sine and cosine. Fixed positional embeddings is a special case of what is called Fourier features. 
 ## Data Leakage
+Data leakage is when some form of label leaks into the feature set and is used for making predictions and this information is not available during inference. Data leakage is challenging because it is usually not obvious that it's happening especially because your evaluation can gain great results but in production the model might fail in unexpected ways. Here are two examples of data leakage where the model performs well during evaluation but failed in production:   
+1. Assume the scenario where patient chest scans are used to predict whether they have COVID-19 or not. The data has a mix of scans where the patient is standing or lying down. Because most patients with severe conditions took their scan lying down, the model learns to predict serious COVID risk from the person's position
+1. Consider the same scenario as above. The model might pick up on the text font that certain hospitals use, e.g. fonts from the hospital with more serious cases becomes a predictor
+1. Consider a model that predicts cancer on CT scans. Your data comes from hospital A and the evalution on data from this hospital is good. But when you evalutate your model using data from hospital B, the results aren't good. Turns out that patients in hospital A whome their doctor suspects cancer for them get scanned with specific machine whereas patients in the other hospital are assigned a machine by random. The labels have leaked into the features in this case as the model learns to make predictions based on the information on the scan machine.  
 ### **Common Causes**
 ### Splitting time-correlated data randomly instead of by time   
+Time-correlated data means that the time the data is generated affects its label distribution. It is very important to not randomly split your data into train, validation and test splits in this case. Doing so allows your models to cheat during evaluation by having information about the future. We say that information from the future has leaked into the training process. Here are two examples.
+1. Consider predicting stock prices, generally similar stocks e.g. tech stocks move together. So if 90% of stocks go down today, it's likely that the other 10% go down too. If you have data from 7 days and randomly split your data, prices from day seven can be included in your train split and inform the model about the market condition of that day. In this case your model has information about the future and if the rest of the stock prices from the seventh day are in the test split, the model will perform well due to the leak. You need to split by time, e.g. train on the first 6 days and predict on the seventh day.
+1. Here's a less obvious example; music recommendations. The recommended songs depend on many factors other than the user's taste. For example the general music trend of the day. If a singer passes away for instance, it is much more likely for their songs to be listened to. If you include samples from a certain day in the train split, information about the music trend that day will be passed to your model making it easier to make predictions on **other samples on that same day**.
 ### Scaling before splitting   
+As mentioned earlier in the chapter, scaling features is important. To scale the features, you need global statistics, e.g. mean and variance. One source of information leakage is computing the statistics on the *entire* training data, i.e. before splitting. This leaks information about the test data's statistics into the training process and allows the model to **adjust its predictions for the test samples**. Because this information is not available during inference, the model's performance will likely degrage.    
+To avoid this, first split your data then scale, i.e. use the statistics of the train split to scale **all the splits**. Some even suggest creating splits before EDA to not gain any information about the test split accidentally. 
+
 ### Filling in missing data with statistics from the test split   
+Similar to scaling before splitting, if you use the statistics of the entire dataset to determine the values you want to fill the missing values with, information about the test split will leake into the train set.   
+To mitigate this issue, split the data first, then use the statistics from the train split to determine the filling values *in all splits*.
 ### Poor handling of data duplication before splitting
+Duplicate or near-duplicate data and failing to remove them before splitting can result in having the same data in train and validation/test splits. Duplication can be a result of data collection, merging different data sources or from data processing, e.g. oversampling.   
+To avoid this always check for duplicates before splitting and also after splitting just to make sure. Also, if you are oversampling do it after splitting.
 ### Group leakage   
+If a group of examples have strongly correlated labels but are divided into different splits, you have group leakage. For example, if a patient gets two CT scans 1 week apart. The labels are likely the same and if one is in the training and the other in test, your model cheats.   
+It's hard avoiding this type of leakage without understanding how your test is split.
 ### Leakage from data generation process
+Leakage can be a result of the data collection itself. The third example at the beginning of this section with the model relying on the type of scanning machines is an example. It's really hard to detect this type of leakage because you have to know how the data is collected and in this example that the procedure is different between hospitals A and B. It's a good idea to normalise all the images to have the same resolution to make it harder for the model to know which image is from which machine.   
+Keeping track of the sources of your data and understanding how it is collected and processed helps with identifying these leakages. Include subject matter expertise who know about the data collection process.
 ### Detecting Data Leakage
+Data leakage can happen in any step of the ML pipeline from collecting, sampling, splitting to feature engineering. It is therefore important to monitor for leakage during the entire ML lifecycle. Here are some tips for detecting data leakage:
+1. Measure the correlation between each feature and the label. If a feature has unusually high correlation, investigate how this feature is generated and whether the correlation makes sense. Note that its possible for individual features to not contain leakage but a combination might contain leakage. For example, for a model predicting how long an employee will stay at a company the start date and end date separately may not be telling but both together can give us more information.
+1. Do ablation studies to measure how important a feature or a set of feature is to your model. If removing a feature deteriorates the performance significantly investigate why that is. With thousands of features, doing this analysis on each possible combination is not feasible, but with subject matter expertise it will be useful to do it on a subset that you are most suspicious about. Also, these analysis can run offline on your own schedule, so you can leverage your machines during downtime for this.
 ## Engineering Good Features
-### Feature Importance
-### Feature Generalisation   
+Having more features is not necessarily a good thing for the reasons below:
+1. Has the risk of overfitting
+1. Increases memory requirements to serve the model, which in turn requires more expensive machine/instance to serve the model
+1. More features means more opportunity for data leakage
+1. Increased number of features can lead to increased inference latency when doing online prediction especially if the features need to be extracted from raw data for online predictions
+1. Useless features become technical debts. Whenver the data pipeline changes, all the affected features need to be adjusted accordingly. For example, if you application decides to no longer take the user's age all the features (including the useless ones) need to be updated
+
+In theory less important features should get 0 weight with regularisation methods, e.g. L1. However, in practice it makes models learn faster if features that are no longer helpful are removed. Below are two factors you might want to consider when evaluating whether a feature is good for a model. 
+### **Feature Importance**
+If you are using classical ML algorithms like boosted gradient treest, the easiest way is to used the built-in feature importance functions. For model-agnostic methods SHAP and the open-source library InterpreML are useful.
+### **Feature Generalisation**   
+The goal of training an ML model is to make correct predictions on unseen data. For this to be possible the features need to generalise to unseen data. For example in predicting whether a comment is spam or not using the post identifier is not generalisable and should not be used. However, the identifier of the user who posts comments such as usernam can be useful.   
+To measure feature generalisation two aspects should be considered; feature coverage and distribution of feature values.   
+
+### Coverage
+A features coverage is the percentage of samples that have a value for that feature. What coverage percentage is good for a feature to be generalisable depends on the feature and why the values are missing. If you want to predict who will buy a home in the next 12 months and think that number of children is a good feature but only 1% of you data has a value for that feature, it might not be useful. However, if only 1% has values and 99% of examples with this feature have POSITIVE labels, this feature is useful. Also, if features are not missing at random, having a feature or not may be a strong indicator of its value and you should consider it.
+
+Coverage can differ widely between slices of data and even in the same slice of data over time. If coverage of a feature differs a lot between the train and test split, e.g. 90% coverage in train and 20% in test, this can indicate that your splits come from different distributions. You should investigate whehter the way you split makes sense and whether this feature is a cause for data leakage.
+
+### Distribution
+For features that have values, it's useful to look at there distribution. If the set of feature values that appears in the seen data has no overlap with the values of test, this feature might be hurt performance.   
+For example, for a model predicting ETA of rides, consider a feature DAY_OF_THE_WEEK. This feature can be useful as there is more traffic on weekdays. Assume that this feature has 100% coverage but the train split includes days Monday through Saturday and the test split includes Sunday as the feature value. If you don't have a good scheme to encode the days, the feature won't generalise to the test split and it may harm your model's performance.   
+When considering the feature's generalisation, there's a trade-off between generalisation and specificity. You might realise that traffic during an hour only changes depending on whether that hour is the rush hour. So you generate a new boolean feature, IS_RUSH_HOUR which is more generalisable but less specific than a feature that indicates the hour itself. Using only IS_RUSH_HOUR though might cause the model to lose important information about the hour.
+
