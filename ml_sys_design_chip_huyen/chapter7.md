@@ -49,11 +49,29 @@ It is very common to extract features in a batch during training, but for infere
 
 Building infrastructure to unify stream processing and batch processing has become a popular topic in recent years for the ML community. Some companies including Uber and Weibo have made major efforts to unify their batch and stream processing using a stream processor like Apache Flink. Some companies use feature stores to ensure the consistency between the batch features used during training and the streaming features used in production. 
 ## **Model Compression**
-## Low-Rank Factorisation
-## Knowledge Distillation
-## Pruning
-## Quantisation
+If you want to improve the latency of your deployed model, there are three areas you can work on: 
+1. Make the model generate predictions faster; this is called model optimisation
+1. Make the model smaller; this is called model compression.
+1. Make the hardware it is deployed on faster
 
+We will go over four common model compression techniques:
+## Low-Rank Factorisation
+In this method, high-dimenstional tensors are replaced with lower-dimensional tensors. One type of low-rand factorisation is *compact convolutional filters*. This method used in convolutional neural networks decomposes the $K^2C$ parameter convolution operation with two steps, a depthwise $K$ x $K$ x 1 and a pointwise 1 x 1 x $C$ operation. Reducing it to $K^2 + C$ parameters.
+## Knowledge Distillation
+This is the process of training a smaller model, a student, to mimic a larger pretrained model or an ensemble of pretrained models, a teacher. An example is DistillBERT which reduces the number of parameters by 40% but is 60% faster and retains 97% of the language understanding of BERT. Usually distillation happens after the teacher has be trained but you can have the teacher and student to train simultaneously.
+The downside of this approach is that you need a pretrained model and it is sensitive to applications and model architectures.
+## Pruning
+Pruning is a method originally used for decision trees to remove the tree sections that uncritical and redundant for prediction. In the context of neural networks it can mean two things:
+1. Removing nodes all together and reducing the size of the model by changing the model architecture.
+2. Setting unimportant nodes to zero and making the model sparse while keeping the architecture the same. This is a more common way of pruning and results in saving a lot of storage space while compromising overall accuracy. Pruning has the downside of introducing biases into you model.
+## Quantisation
+Quantisation is the most commonly used model compression technique that is generalisable to all architectures and tasks. In this technique, the number of bits used to represent the parameters are reduced. By default, most software packages use 32bits to represent a float number. a model with 100 million parameters will be around 400MB in this case. Using 16 bits instead will halve the size of the model. This is called *half precision*. You can reduce the number of bits even further and use 8 bits, this is called *fixed point*.
+Reducing the size of models this way also results in faster computation for two reasons:
+1. You can increase the batch size
+1. Lower precision makes computations faster
+The downside of quantisation is that with fewer bits to represent you numbers you have a more limited range and need to round/scale your bigger numbers. This can lead to overflow/underflow when rounding and also performance errors.
+
+You can either do quatisation-aware training where you train the model with lower precision or you can quantise your model after training for inference.
 ## **ML on the Cloud and on the Edge**
 ## Compiling and Optimising Models for Edge Devices
 ## ML in Browsers
