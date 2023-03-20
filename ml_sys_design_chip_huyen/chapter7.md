@@ -14,7 +14,19 @@ Streaming features refer exclusively to features computed from streaming data. I
 
 The figures below show the architecture for batch and online prediction (using only batch features and both). Note that in both batch and online predictions can be made for multiple samples (a batch of samples) or one sample at a time.
 
+<center>
+<img src="images/batch_pred.jpg" width="50%" alt="batch_pred" title="batch_pred">
+</center>
+
+<center>
+<img src="images/stream_pred.jpg" width="50%" alt="stream_pred" title="stream_pred">
+</center>
+
 The table below summarises the differences. On advantage of online predictions is that the predictions are only made for users who use your application. In other words, if you have 30 million users and predict recommendations for all on a daily basis, but only have 600,000 daily active users, 98% of your predictions will be wasted. 
+
+<center>
+<img src="images/online_vs_batch_table.jpg" width="50%" alt="online_vs_batch_table" title="online_vs_batch_table">
+</center>
 
 The two prediction modes are not mutually exclusive and can be used together fore different use cases. For example, apps like DoorDash and UberEats use batch prediction to recommend restaurants as generating those predictions online will take too long. However, when the users click on a restaurant, the food recommendations are generated online. 
 ## From Batch Prediction to Online Prediction
@@ -30,6 +42,10 @@ To overcome the latency challenge of online prediction, two components are requi
 ## Unifying Batch Pipeline and Streaming Pipeline
 If you use batch systems like MapReduce and Spark to periodically process large amounts of data efficiently you can't use that same infrastructure to make online predictions using streaming features. You will need a separate streaming pipeline for that.   
 It is very common to extract features in a batch during training, but for inference compute them in a streaming process as shown in the figure below. This is a source of bugs as the two pipelines can compute different features for the same input because you forgot to correctly replicate the training pipeline in the inference pipeline.
+
+<center>
+<img src="images/online_pred_with_batch_feat.jpg" width="50%" alt="online_pred_with_batch_feat" title="online_pred_with_batch_feat">
+</center>
 
 Building infrastructure to unify stream processing and batch processing has become a popular topic in recent years for the ML community. Some companies including Uber and Weibo have made major efforts to unify their batch and stream processing using a stream processor like Apache Flink. Some companies use feature stores to ensure the consistency between the batch features used during training and the streaming features used in production. 
 ## **Model Compression**
