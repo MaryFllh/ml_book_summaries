@@ -73,5 +73,40 @@ The downside of quantisation is that with fewer bits to represent you numbers yo
 
 You can either do quatisation-aware training where you train the model with lower precision or you can quantise your model after training for inference.
 ## **ML on the Cloud and on the Edge**
+On the edge means a large chunk of computation is done on consumer devices-such as browsers, phones, laptops, smartwatches, cars, security cameras, robots, embedded devices, FPGAs (field programmable gate arrays) and ASICs (application-specific integrated circuits) which are also known as edge devices.
+
+Edge computing is appealing for a variety of reasons:
+1. With more computation done on the edge there is less computations required on the cloud which costs less.
+1. Edge computing allows your models to work in situations where there are no internet connections or where the connections are unreliable such as in rural areas or developing countries.
+1. When the models are already on the consumer's devices, you can worry less about the network latency. Requiring data to transfer over the network, i.e. sending data to the model on the cloud to make predictions then sending the predictions back to the users might make some use cases impossible. In many cases network latency is a bigger bottleneck than inference latency. 
+1. Easier to comply with data privacy regulations. 
+
+To move computation to the edge, the edge devices have to be powerful enough to handle the computation, have enough memory to store ML models and load them into memory, as well as have enough battery or be connected to an energy source to power the application for a reasonable amount of time.
 ## Compiling and Optimising Models for Edge Devices
+For a model build with a certain framework e.g. PyTorch, to run on a hardware backend, that framework has to be supported by the hardware vendor. Providing support for a framework on a hardware backend is time-consuming and engineering-intensive. Mapping from ML workloads to a hardware backend requires understanding and taking advantage of that hardware's design, and different hardware backends have different memory layouts and compute primitives as shown in the figure below.
+<center>
+<img src="images/mem_arch.jpg" width="50%" alt="mem_arch" title="mem_arch">
+</center> 
+For example the compute primitive of CPUs used to be a scaler and the compute primitive of GPUs used to be a one-dimensional vector, whereas the compute primitive of TPUs is a tensor (two-dimensional vector). Performing a convolution operator will be very different with one-dimensional vectors compared to two-dimensional vectors. Similarly you would need to take into account different L1, L2, and L3 layouts and buffer sizes to use them differently.
+Because of this challenge, framework developers tend to focus on providing support to only a handful of server-class hardware, and hardware vendors tend to offer their own kernel libraries for a narrow range of frameworks. Deploying ML models to new hardware requires significant manual effort.    
+
+Instead of targeting new compilers and libraries for every new hardware backend, what if we create a middleman to bridge frameworks and platforms? Framework developers will no longer have to support every type of hardware; they will only need to translate their framework code into this middleman. Hardware vendors can then support one middleman instead of multiple frameworks.
+
+This type of middleman is called an intermediate representation (IR). IRs lie at the core of how compilers work. From the original code for a model, compilers generate a series of high- and low-level IRs before generating the code native to a hardware backend so that it can run on that hardware backend, as seen below. This process involves lowering the high-level framework code into low-level hardware-native code. 
+
+<center>
+<img src="images/IRS.jpg" width="50%" alt="IRS" title="IRS">
+</center> 
+After the code running you r models is lowered, it might be slow. The generated low-level code might not leverage the data locality and hardware caches, or advanced features like vector and parallel operations that could speed up the code. 
+
+Note that even though individual functions in frameworks such as PyTorch, Numpy might be optimised, there's little or no optimisation across frameworks which ends up being most of ML application code. 
+
+There are two ways to optimise ML models: locally and globally. Locally is when you optimise an operator or a set of operators of your model. Globally is when you optimise the entire computation graph end to end. Here are four techniques for speeding up models:   
+1. Vectorisation: Given a loop or a nested loop, instead of executing it one item at a time, execute multiple elements contiguous in memory at a time to reduce latency caused by data I/O. 
+1. Parallelisation: Given an n-dimensional array, divide it into different, independent work chunks, and do the operation on each chunk individually.
+1. Loop tiling: Change the data accessing order in a loop to leverage hardware's memory layout and cache. This is hardware independent. A good access pattern on CPUs is not a good access pattern on GPUs.
+1. Operator fusion: Fuse multiple operators into one to avoid redundant memory access. For example, two operators on the same array require two loops over that array. In a fused case, it's just one loop.
 ## ML in Browsers
+It's possible to generate code that can run on any hardware backends by running that code in browsers. WebAssembly (WASM) is an open standard that allow you to run executable programs in browsers. After you've built your models in scikit-learn, PyTorch, etc. instead of compiling your models to run on specific hardware, you can compile your model to WASM. You get back and executable file that you can just use with JavaScript.
+
+WASM is already much faster than JavaScript but still slower than running code natively on devices.
